@@ -1,12 +1,11 @@
 $(document).ready(function () {
     // State
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-    let currentView = 'all'; // 'all', 'active', 'completed'
+    let currentView = 'all';
     let dateFilter = null;
+    let editingTaskId = null;
 
     // DOM Elements
-    const $taskInput = $('#taskInput');
-    const $taskDate = $('#taskDate');
     const $addTaskBtn = $('#addTaskBtn');
     const $taskListContainer = $('#taskList');
     const $emptyState = $('#emptyState');
@@ -22,17 +21,31 @@ $(document).ready(function () {
     const $totalPending = $('#totalPending');
     const $totalCompleted = $('#totalCompleted');
 
+    // Modal Elements
+    const $modal = $('#taskModal');
+    const $modalTitle = $('#modalTitle');
+    const $modalTaskInput = $('#modalTaskInput');
+    const $modalTaskDescription = $('#modalTaskDescription');
+    const $modalTaskDate = $('#modalTaskDate');
+    const $saveTask = $('#saveTask');
+    const $cancelModal = $('#cancelModal');
+    const $closeModal = $('#closeModal');
+
     // Initialize
     updateDateDisplay();
     updateStats();
     renderTasks();
 
     // Event Listeners
-    $addTaskBtn.on('click', addTask);
+    $addTaskBtn.on('click', openAddModal);
+    $saveTask.on('click', saveTask);
+    $cancelModal.on('click', closeModal);
+    $closeModal.on('click', closeModal);
 
-    $taskInput.on('keypress', function (e) {
-        if (e.which === 13) {
-            addTask();
+    // Close modal on outside click
+    $modal.on('click', function (e) {
+        if ($(e.target).is($modal)) {
+            closeModal();
         }
     });
 
@@ -67,24 +80,12 @@ $(document).ready(function () {
     // Dynamic Event Listeners for Task Items
     $taskListContainer.on('click', '.checkbox, .task-text', toggleTask);
     $taskListContainer.on('click', '.btn-delete', deleteTask);
-    $taskListContainer.on('click', '.btn-edit', enableEditMode);
-
-    // Edit Mode Events
-    $taskListContainer.on('blur', '.edit-input', saveEdit);
-    $taskListContainer.on('keypress', '.edit-input', function (e) {
-        if (e.which === 13) {
-            $(this).blur();
-        }
-    });
+    $taskListContainer.on('click', '.btn-edit', openEditModal);
 
     // Functions
     function updateDateDisplay() {
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         $currentDate.text(new Date().toLocaleDateString('en-US', options));
-
-        // Set default date input to today
-        const today = new Date().toISOString().split('T')[0];
-        $taskDate.val(today);
     }
 
     function updatePageTitle() {
@@ -99,47 +100,88 @@ $(document).ready(function () {
     function updateStats() {
         const today = new Date().toISOString().split('T')[0];
 
-        // Today's stats
         const todayTasks = tasks.filter(t => t.date === today);
         const todayPendingCount = todayTasks.filter(t => !t.completed).length;
         const todayCompletedCount = todayTasks.filter(t => t.completed).length;
 
-        // Total stats
         const totalPendingCount = tasks.filter(t => !t.completed).length;
         const totalCompletedCount = tasks.filter(t => t.completed).length;
 
-        // Update DOM
         $todayPending.text(todayPendingCount);
         $todayCompleted.text(todayCompletedCount);
         $totalPending.text(totalPendingCount);
         $totalCompleted.text(totalCompletedCount);
     }
 
-    function addTask() {
-        const text = $taskInput.val().trim();
-        const date = $taskDate.val();
+    function openAddModal() {
+        editingTaskId = null;
+        $modalTitle.text('Add New Task');
+        $modalTaskInput.val('');
+        $modalTaskDescription.val('');
+        $modalTaskDate.val(new Date().toISOString().split('T')[0]);
+        $modal.addClass('active');
+        $modalTaskInput.focus();
+    }
 
-        if (text === '') return;
+    function openEditModal(e) {
+        e.stopPropagation();
+        const $item = $(this).closest('.task-item');
+        const id = $item.data('id');
+        const task = tasks.find(t => t.id === id);
 
-        const newTask = {
-            id: Date.now(),
-            text: text,
-            date: date || new Date().toISOString().split('T')[0],
-            completed: false
-        };
+        if (task.completed) return;
 
-        tasks.unshift(newTask);
+        editingTaskId = id;
+        $modalTitle.text('Edit Task');
+        $modalTaskInput.val(task.text);
+        $modalTaskDescription.val(task.description || '');
+        $modalTaskDate.val(task.date);
+        $modal.addClass('active');
+        $modalTaskInput.focus();
+    }
+
+    function closeModal() {
+        $modal.removeClass('active');
+        editingTaskId = null;
+    }
+
+    function saveTask() {
+        const text = $modalTaskInput.val().trim();
+        const description = $modalTaskDescription.val().trim();
+        const date = $modalTaskDate.val();
+
+        if (text === '') {
+            $modalTaskInput.focus();
+            return;
+        }
+
+        if (editingTaskId) {
+            // Edit existing task
+            const task = tasks.find(t => t.id === editingTaskId);
+            if (task) {
+                task.text = text;
+                task.description = description;
+                task.date = date || new Date().toISOString().split('T')[0];
+            }
+        } else {
+            // Add new task
+            const newTask = {
+                id: Date.now(),
+                text: text,
+                description: description,
+                date: date || new Date().toISOString().split('T')[0],
+                completed: false
+            };
+            tasks.unshift(newTask);
+        }
+
         saveTasks();
         updateStats();
         renderTasks();
-
-        $taskInput.val('');
-        $taskInput.focus();
+        closeModal();
     }
 
     function toggleTask(e) {
-        if ($(e.target).hasClass('edit-input')) return;
-
         const $item = $(this).closest('.task-item');
         const id = $item.data('id');
 
@@ -167,47 +209,6 @@ $(document).ready(function () {
         }, 300);
     }
 
-    function enableEditMode(e) {
-        e.stopPropagation();
-        const $item = $(this).closest('.task-item');
-        const id = $item.data('id');
-        const task = tasks.find(t => t.id === id);
-
-        if (task.completed) return;
-
-        const $textSpan = $item.find('.task-text');
-        const currentText = task.text;
-
-        $item.addClass('edit-mode');
-        $textSpan.html(`<input type="text" class="edit-input" value="${currentText}">`);
-
-        const $input = $item.find('.edit-input');
-        $input.focus();
-
-        const val = $input.val();
-        $input.val('').val(val);
-    }
-
-    function saveEdit() {
-        const $input = $(this);
-        const $item = $input.closest('.task-item');
-        const id = $item.data('id');
-        const newText = $input.val().trim();
-
-        if (newText === '') {
-            renderTasks();
-            return;
-        }
-
-        const task = tasks.find(t => t.id === id);
-        if (task) {
-            task.text = newText;
-            saveTasks();
-            updateStats();
-        }
-        renderTasks();
-    }
-
     function saveTasks() {
         localStorage.setItem('tasks', JSON.stringify(tasks));
     }
@@ -215,14 +216,12 @@ $(document).ready(function () {
     function getFilteredTasks() {
         let filtered = tasks;
 
-        // Filter by View
         if (currentView === 'active') {
             filtered = filtered.filter(t => !t.completed);
         } else if (currentView === 'completed') {
             filtered = filtered.filter(t => t.completed);
         }
 
-        // Filter by Date
         if (dateFilter) {
             filtered = filtered.filter(t => t.date === dateFilter);
         }
@@ -233,7 +232,6 @@ $(document).ready(function () {
     function groupTasksByDate(taskList) {
         const groups = {};
 
-        // Sort tasks by date
         taskList.sort((a, b) => new Date(a.date) - new Date(b.date));
 
         taskList.forEach(task => {
@@ -275,7 +273,6 @@ $(document).ready(function () {
         $emptyState.hide();
         const groupedTasks = groupTasksByDate(filteredTasks);
 
-        // Sort dates (keys)
         const sortedDates = Object.keys(groupedTasks).sort();
 
         sortedDates.forEach(date => {
@@ -293,13 +290,19 @@ $(document).ready(function () {
 
             tasksForDate.forEach(task => {
                 const completedClass = task.completed ? 'completed' : '';
+                const descriptionHtml = task.description ?
+                    `<div class="task-description">${escapeHtml(task.description)}</div>` : '';
+
                 const html = `
                     <li class="task-item ${completedClass}" data-id="${task.id}">
                         <div class="task-content">
                             <div class="checkbox">
                                 <i class="fa-solid fa-check"></i>
                             </div>
-                            <span class="task-text">${escapeHtml(task.text)}</span>
+                            <div class="task-details">
+                                <div class="task-text">${escapeHtml(task.text)}</div>
+                                ${descriptionHtml}
+                            </div>
                         </div>
                         <div class="actions">
                             <button class="btn-icon btn-edit" title="Edit">

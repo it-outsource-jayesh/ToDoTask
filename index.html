@@ -47,6 +47,10 @@
                     <div class="date-display" id="currentDate"></div>
                 </div>
                 <div class="header-actions">
+                    <button id="addTaskBtn" class="btn-add-task">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Task</span>
+                    </button>
                     <div class="filter-wrapper">
                         <i class="fa-solid fa-filter"></i>
                         <input type="date" id="dateFilter" class="filter-date" title="Filter by Date">
@@ -56,17 +60,6 @@
                     </div>
                 </div>
             </header>
-
-            <div class="input-section">
-                <div class="input-group">
-                    <input type="text" id="taskInput" placeholder="What needs to be done?">
-                    <input type="date" id="taskDate" class="date-picker">
-                    <button id="addTaskBtn">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Add Task</span>
-                    </button>
-                </div>
-            </div>
 
             <div class="stats-section" id="statsSection">
                 <div class="stat-card">
@@ -121,6 +114,36 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Task</h3>
+                <button class="modal-close" id="closeModal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="modalTaskInput">Task Title *</label>
+                    <input type="text" id="modalTaskInput" placeholder="What needs to be done?">
+                </div>
+                <div class="form-group">
+                    <label for="modalTaskDescription">Description</label>
+                    <textarea id="modalTaskDescription" rows="4" placeholder="Add more details (optional)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="modalTaskDate">Due Date</label>
+                    <input type="date" id="modalTaskDate">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelModal">Cancel</button>
+                <button class="btn-primary" id="saveTask">Save Task</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
