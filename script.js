@@ -34,6 +34,7 @@ $(document).ready(function () {
     // Initialize
     updateDateDisplay();
     updateStats();
+    toggleViewDisplay();
     renderTasks();
 
     // Event Listeners
@@ -56,6 +57,7 @@ $(document).ready(function () {
 
         currentView = $(this).data('view');
         updatePageTitle();
+        toggleViewDisplay();
         renderTasks();
     });
 
@@ -77,6 +79,25 @@ $(document).ready(function () {
         renderTasks();
     });
 
+    // Stat card click handlers
+    $('#statsSection').on('click', '.stat-card', function () {
+        const statType = $(this).data('stat');
+
+        // Switch to appropriate view
+        $navItems.removeClass('active');
+        if (statType === 'today-pending' || statType === 'total-pending') {
+            currentView = 'active';
+            $navItems.filter('[data-view="active"]').addClass('active');
+        } else if (statType === 'today-completed' || statType === 'total-completed') {
+            currentView = 'completed';
+            $navItems.filter('[data-view="completed"]').addClass('active');
+        }
+
+        updatePageTitle();
+        toggleViewDisplay();
+        renderTasks();
+    });
+
     // Dynamic Event Listeners for Task Items
     $taskListContainer.on('click', '.checkbox, .task-text', toggleTask);
     $taskListContainer.on('click', '.btn-delete', deleteTask);
@@ -95,6 +116,18 @@ $(document).ready(function () {
             'completed': 'Completed Tasks'
         };
         $pageTitle.text(titles[currentView]);
+    }
+
+    function toggleViewDisplay() {
+        if (currentView === 'all') {
+            // Dashboard: Show only stats
+            $('#statsSection').show();
+            $('.content-area').hide();
+        } else {
+            // Other views: Show only tasks
+            $('#statsSection').hide();
+            $('.content-area').show();
+        }
     }
 
     function updateStats() {

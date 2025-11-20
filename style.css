@@ -203,6 +203,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
+    overflow-y: auto;
 }
 
 .stat-card {
@@ -214,11 +215,13 @@ body {
     align-items: center;
     gap: 1rem;
     transition: all 0.3s ease;
+    cursor: pointer;
 }
 
 .stat-card:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 .stat-icon {
