@@ -1,67 +1,153 @@
-$(document).ready(function() {
+$(document).ready(function () {
     // State
     let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    let currentView = 'all'; // 'all', 'active', 'completed'
+    let dateFilter = null;
 
     // DOM Elements
     const $taskInput = $('#taskInput');
+    const $taskDate = $('#taskDate');
     const $addTaskBtn = $('#addTaskBtn');
-    const $taskList = $('#taskList');
+    const $taskListContainer = $('#taskList');
     const $emptyState = $('#emptyState');
+    const $navItems = $('.nav-item');
+    const $pageTitle = $('#pageTitle');
+    const $currentDate = $('#currentDate');
+    const $dateFilter = $('#dateFilter');
+    const $clearFilterBtn = $('#clearFilterBtn');
+
+    // Stats Elements
+    const $todayPending = $('#todayPending');
+    const $todayCompleted = $('#todayCompleted');
+    const $totalPending = $('#totalPending');
+    const $totalCompleted = $('#totalCompleted');
 
     // Initialize
+    updateDateDisplay();
+    updateStats();
     renderTasks();
 
     // Event Listeners
     $addTaskBtn.on('click', addTask);
-    
-    $taskInput.on('keypress', function(e) {
+
+    $taskInput.on('keypress', function (e) {
         if (e.which === 13) {
             addTask();
         }
     });
 
+    // Navigation / View Switching
+    $navItems.on('click', function () {
+        $navItems.removeClass('active');
+        $(this).addClass('active');
+
+        currentView = $(this).data('view');
+        updatePageTitle();
+        renderTasks();
+    });
+
+    // Date Filter Events
+    $dateFilter.on('change', function () {
+        dateFilter = $(this).val();
+        if (dateFilter) {
+            $clearFilterBtn.show();
+        } else {
+            $clearFilterBtn.hide();
+        }
+        renderTasks();
+    });
+
+    $clearFilterBtn.on('click', function () {
+        dateFilter = null;
+        $dateFilter.val('');
+        $clearFilterBtn.hide();
+        renderTasks();
+    });
+
     // Dynamic Event Listeners for Task Items
-    $taskList.on('click', '.checkbox, .task-text', toggleTask);
-    $taskList.on('click', '.btn-delete', deleteTask);
-    $taskList.on('click', '.btn-edit', enableEditMode);
-    
+    $taskListContainer.on('click', '.checkbox, .task-text', toggleTask);
+    $taskListContainer.on('click', '.btn-delete', deleteTask);
+    $taskListContainer.on('click', '.btn-edit', enableEditMode);
+
     // Edit Mode Events
-    $taskList.on('blur', '.edit-input', saveEdit);
-    $taskList.on('keypress', '.edit-input', function(e) {
+    $taskListContainer.on('blur', '.edit-input', saveEdit);
+    $taskListContainer.on('keypress', '.edit-input', function (e) {
         if (e.which === 13) {
             $(this).blur();
         }
     });
 
     // Functions
+    function updateDateDisplay() {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        $currentDate.text(new Date().toLocaleDateString('en-US', options));
+
+        // Set default date input to today
+        const today = new Date().toISOString().split('T')[0];
+        $taskDate.val(today);
+    }
+
+    function updatePageTitle() {
+        const titles = {
+            'all': 'Dashboard',
+            'active': 'My Tasks',
+            'completed': 'Completed Tasks'
+        };
+        $pageTitle.text(titles[currentView]);
+    }
+
+    function updateStats() {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Today's stats
+        const todayTasks = tasks.filter(t => t.date === today);
+        const todayPendingCount = todayTasks.filter(t => !t.completed).length;
+        const todayCompletedCount = todayTasks.filter(t => t.completed).length;
+
+        // Total stats
+        const totalPendingCount = tasks.filter(t => !t.completed).length;
+        const totalCompletedCount = tasks.filter(t => t.completed).length;
+
+        // Update DOM
+        $todayPending.text(todayPendingCount);
+        $todayCompleted.text(todayCompletedCount);
+        $totalPending.text(totalPendingCount);
+        $totalCompleted.text(totalCompletedCount);
+    }
+
     function addTask() {
         const text = $taskInput.val().trim();
+        const date = $taskDate.val();
+
         if (text === '') return;
 
         const newTask = {
             id: Date.now(),
             text: text,
+            date: date || new Date().toISOString().split('T')[0],
             completed: false
         };
 
         tasks.unshift(newTask);
         saveTasks();
+        updateStats();
         renderTasks();
+
         $taskInput.val('');
         $taskInput.focus();
     }
 
     function toggleTask(e) {
-        // Prevent toggling when clicking on edit input
         if ($(e.target).hasClass('edit-input')) return;
 
         const $item = $(this).closest('.task-item');
         const id = $item.data('id');
-        
+
         const task = tasks.find(t => t.id === id);
         if (task) {
             task.completed = !task.completed;
             saveTasks();
+            updateStats();
             renderTasks();
         }
     }
@@ -70,12 +156,13 @@ $(document).ready(function() {
         e.stopPropagation();
         const $item = $(this).closest('.task-item');
         const id = $item.data('id');
-        
+
         $item.css('animation', 'slideIn 0.3s reverse forwards');
-        
+
         setTimeout(() => {
             tasks = tasks.filter(t => t.id !== id);
             saveTasks();
+            updateStats();
             renderTasks();
         }, 300);
     }
@@ -85,19 +172,18 @@ $(document).ready(function() {
         const $item = $(this).closest('.task-item');
         const id = $item.data('id');
         const task = tasks.find(t => t.id === id);
-        
-        if (task.completed) return; // Don't edit completed tasks
+
+        if (task.completed) return;
 
         const $textSpan = $item.find('.task-text');
         const currentText = task.text;
 
         $item.addClass('edit-mode');
         $textSpan.html(`<input type="text" class="edit-input" value="${currentText}">`);
-        
+
         const $input = $item.find('.edit-input');
         $input.focus();
-        
-        // Move cursor to end
+
         const val = $input.val();
         $input.val('').val(val);
     }
@@ -109,7 +195,6 @@ $(document).ready(function() {
         const newText = $input.val().trim();
 
         if (newText === '') {
-            // If empty, revert or delete? Let's revert to original if empty
             renderTasks();
             return;
         }
@@ -118,6 +203,7 @@ $(document).ready(function() {
         if (task) {
             task.text = newText;
             saveTasks();
+            updateStats();
         }
         renderTasks();
     }
@@ -126,15 +212,86 @@ $(document).ready(function() {
         localStorage.setItem('tasks', JSON.stringify(tasks));
     }
 
-    function renderTasks() {
-        $taskList.empty();
+    function getFilteredTasks() {
+        let filtered = tasks;
 
-        if (tasks.length === 0) {
+        // Filter by View
+        if (currentView === 'active') {
+            filtered = filtered.filter(t => !t.completed);
+        } else if (currentView === 'completed') {
+            filtered = filtered.filter(t => t.completed);
+        }
+
+        // Filter by Date
+        if (dateFilter) {
+            filtered = filtered.filter(t => t.date === dateFilter);
+        }
+
+        return filtered;
+    }
+
+    function groupTasksByDate(taskList) {
+        const groups = {};
+
+        // Sort tasks by date
+        taskList.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        taskList.forEach(task => {
+            const dateKey = task.date;
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            groups[dateKey].push(task);
+        });
+
+        return groups;
+    }
+
+    function formatDateHeader(dateString) {
+        const date = new Date(dateString);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const dString = dateString;
+        const tString = today.toISOString().split('T')[0];
+        const tomString = tomorrow.toISOString().split('T')[0];
+
+        if (dString === tString) return 'Today';
+        if (dString === tomString) return 'Tomorrow';
+
+        return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    }
+
+    function renderTasks() {
+        $taskListContainer.empty();
+        const filteredTasks = getFilteredTasks();
+
+        if (filteredTasks.length === 0) {
             $emptyState.show();
-        } else {
-            $emptyState.hide();
-            
-            tasks.forEach(task => {
+            return;
+        }
+
+        $emptyState.hide();
+        const groupedTasks = groupTasksByDate(filteredTasks);
+
+        // Sort dates (keys)
+        const sortedDates = Object.keys(groupedTasks).sort();
+
+        sortedDates.forEach(date => {
+            const dateHeader = formatDateHeader(date);
+            const tasksForDate = groupedTasks[date];
+
+            const $group = $(`
+                <div class="date-group">
+                    <div class="date-header">${dateHeader}</div>
+                    <ul class="task-list"></ul>
+                </div>
+            `);
+
+            const $ul = $group.find('ul');
+
+            tasksForDate.forEach(task => {
                 const completedClass = task.completed ? 'completed' : '';
                 const html = `
                     <li class="task-item ${completedClass}" data-id="${task.id}">
@@ -154,9 +311,11 @@ $(document).ready(function() {
                         </div>
                     </li>
                 `;
-                $taskList.append(html);
+                $ul.append(html);
             });
-        }
+
+            $taskListContainer.append($group);
+        });
     }
 
     function escapeHtml(text) {

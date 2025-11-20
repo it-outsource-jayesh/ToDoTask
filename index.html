@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,29 +11,121 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div class="container">
-        <header>
-            <h1>Task Master</h1>
-            <p>Stay organized, stay ahead.</p>
-        </header>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-layer-group"></i>
+                <h1>Task Master</h1>
+            </div>
 
-        <div class="input-group">
-            <input type="text" id="taskInput" placeholder="What needs to be done?">
-            <button id="addTaskBtn"><i class="fa-solid fa-plus"></i></button>
-        </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-view="all">
+                    <i class="fa-solid fa-border-all"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-view="active">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>My Tasks</span>
+                </button>
+                <button class="nav-item" data-view="completed">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Completed</span>
+                </button>
+            </nav>
 
-        <ul id="taskList" class="task-list">
-            <!-- Tasks will be added here dynamically -->
-        </ul>
-        
-        <div class="empty-state" id="emptyState">
-            <i class="fa-solid fa-clipboard-list"></i>
-            <p>No tasks yet. Add one above!</p>
-        </div>
+            <div class="sidebar-footer">
+                <p>Stay organized, stay ahead.</p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="header-left">
+                    <h2 id="pageTitle">Dashboard</h2>
+                    <div class="date-display" id="currentDate"></div>
+                </div>
+                <div class="header-actions">
+                    <div class="filter-wrapper">
+                        <i class="fa-solid fa-filter"></i>
+                        <input type="date" id="dateFilter" class="filter-date" title="Filter by Date">
+                        <button id="clearFilterBtn" class="btn-icon" title="Clear Filter" style="display: none;">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="input-section">
+                <div class="input-group">
+                    <input type="text" id="taskInput" placeholder="What needs to be done?">
+                    <input type="date" id="taskDate" class="date-picker">
+                    <button id="addTaskBtn">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Task</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="stats-section" id="statsSection">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1);">
+                        <i class="fa-solid fa-calendar-day" style="color: #6366f1;"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="todayPending">0</div>
+                        <div class="stat-label">Today Pending</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(34, 197, 94, 0.1);">
+                        <i class="fa-solid fa-calendar-check" style="color: #22c55e;"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="todayCompleted">0</div>
+                        <div class="stat-label">Today Completed</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(251, 146, 60, 0.1);">
+                        <i class="fa-solid fa-list-check" style="color: #fb923c;"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalPending">0</div>
+                        <div class="stat-label">Total Pending</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(34, 197, 94, 0.1);">
+                        <i class="fa-solid fa-check-double" style="color: #22c55e;"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="totalCompleted">0</div>
+                        <div class="stat-label">Total Completed</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div id="taskList" class="task-list-container">
+                    <!-- Tasks will be grouped by date here -->
+                </div>
+
+                <div class="empty-state" id="emptyState">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <p>No tasks found for this view.</p>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
